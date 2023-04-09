@@ -48,8 +48,9 @@ int calculate(int operand_count, int operands[], char op)
 int main(int argc, char *argv[])
 {
     WSAData wsa_data;
-    char message[BUF_SIZE];
-    int str_len;
+    char op_info[BUF_SIZE];
+    int result, operand_count;
+    int recv_cnt, recv_len;
     int clnt_sock, serv_sock;
     struct sockaddr_in serv_addr;
     struct sockaddr_in clnt_addr;
@@ -87,6 +88,7 @@ int main(int argc, char *argv[])
     }
 
     int clnt_addr_len = sizeof(clnt_addr);
+
     for (int i = 0; i < 5; ++i)
     {
         clnt_sock = accept(serv_sock, (struct sockaddr *)&clnt_addr, &clnt_addr_len);
@@ -98,15 +100,20 @@ int main(int argc, char *argv[])
         {
             printf("Connected client %d \n", i + 1);
         }
+        operand_count = 0;
+        recv(clnt_sock, (char*)&operand_count, 1, 0);
 
-        while ((str_len = recv(clnt_sock, message, BUF_SIZE, 0)) != 0)
+        recv_len = 0;
+        while (recv_len < (operand_count * OPERAND_SIZE + 1))
         {
-            send(clnt_sock, message, str_len, 0);
+            recv_cnt = recv(clnt_sock, &op_info[recv_len], BUF_SIZE - 1, 0);
+            recv_len += recv_cnt;
         }
+        result = calculate(operand_count, (int *)op_info, op_info[recv_len - 1]);
+        send(clnt_sock, (char *)&result, sizeof(result), 0);
 
         closesocket(clnt_sock);
     }
-
     closesocket(serv_sock);
     WSACleanup();
 

@@ -19,9 +19,10 @@ int main(int argc, char *argv[])
 {
     WSAData wsa_data;
     int sock;
-    char message[BUF_SIZE];
-    int str_len, recv_len, recv_cnt;
+    char op_msg[BUF_SIZE] = {0};
     struct sockaddr_in serv_addr;
+    int operand_count;
+    int result;
 
     if (0 != WSAStartup(MAKEWORD(2, 2), &wsa_data))
     {
@@ -54,30 +55,22 @@ int main(int argc, char *argv[])
         puts("Connected......");
     }
 
-    while (true)
+    fputs("Operand count: ", stdout);
+    scanf("%d", &operand_count);
+    op_msg[0] = (char)operand_count;
+    for (int i = 0; i < operand_count; ++i)
     {
-        fputs("Input message(Q to quit): ", stdout);
-        fgets(message, BUF_SIZE, stdin);
-        if (!strcmp(message, "q\n") || !strcmp(message, "Q\n"))
-        {
-            break;
-        }
-
-        str_len = send(sock, message, strlen(message), 0);
-
-        recv_len = 0;
-        while (recv_len < str_len)
-        {
-            recv_cnt = recv(sock, message, BUF_SIZE - 1, 0);
-            if (recv_cnt == -1)
-            {
-                error_handling("recv() error.");
-            }
-            recv_len += recv_cnt;
-        }
-        message[recv_len] = 0;
-        printf("Message from server: %s", message);
+        printf("Operand %d: ", i + 1);
+        scanf("%d", (int *)&op_msg[1 + i * OPERAND_SIZE]);
     }
+    fgetc(stdin); //! 删掉缓冲中的字符\n
+    fputs("Operator: ", stdout);
+    scanf("%c", &op_msg[operand_count * OPERAND_SIZE + 1]);
+
+    send(sock, op_msg, operand_count * OPERAND_SIZE + 2, 0);
+    recv(sock, (char *)&result, sizeof(result), 0);
+
+    printf("Operation result: %d\n", result);
     closesocket(sock);
     WSACleanup();
 
@@ -130,7 +123,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < operand_count; ++i)
     {
         printf("Operand %d: ", i + 1);
-        scanf("%d", (int*)&op_msg[1 + i * OPERAND_SIZE]);
+        scanf("%d", (int *)&op_msg[1 + i * OPERAND_SIZE]);
     }
     fgetc(stdin); //! 删掉缓冲中的字符\n
     fputs("Operator: ", stdout);
